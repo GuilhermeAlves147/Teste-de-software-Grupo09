@@ -48,6 +48,91 @@ Os testes documentados neste repositório incluem histórias de usuário relacio
 
 ---
 
+## ⚙️ Como executar o projeto
+
+Para executar os testes na prática, é preciso colocar o sistema de marketplace (API em Spring Boot com banco MySQL) em funcionamento. Siga os passos abaixo.
+
+### 1. O que precisa estar instalado
+
+- **JDK** (a versão do `pom.xml`/`build.gradle`; Java 17 ou superior costuma servir para Spring Boot 3).
+- **Maven** ou **Gradle**, ou use o wrapper do projeto (`mvnw` / `gradlew`), que dispensa a instalação.
+- **MySQL 8.0 ou superior**, em execução.
+- **Git**, para clonar o repositório.
+- (Opcional) **Postman**, para chamar a API, e **MySQL Workbench** ou DBeaver, para consultar o banco.
+
+### 2. Clonar o repositório
+
+```bash
+git clone <URL-DO-REPOSITORIO>
+cd <pasta-do-projeto>
+```
+
+### 3. Criar o banco de dados
+
+Os scripts ficam na pasta `sql/` e devem ser executados nesta ordem:
+
+```bash
+mysql -u root -p < sql/01_ddl.sql      # cria o banco marketplace_db, tabelas, triggers e papéis
+mysql -u root -p < sql/02_carga.sql    # carga de dados de teste
+```
+
+> ⚠️ O `01_ddl.sql` apaga e recria o banco `marketplace_db`. Não rode em um banco com dados que você queira manter.
+> O Hibernate **não** cria tabelas: o esquema vem só do script (`ddl-auto` desativado).
+
+Usuários da carga (senha de todos: `Senha@123`), por exemplo:
+`daniel.santos@email.com` e `gabriela.nascimento@email.com`.
+
+### 4. Configurar as credenciais do banco
+
+Abra `src/main/resources/application.properties` e ajuste a conexão:
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/marketplace_db?useSSL=false&serverTimezone=America/Sao_Paulo&allowPublicKeyRetrieval=true
+spring.datasource.username=SEU_USUARIO
+spring.datasource.password=SUA_SENHA
+spring.jpa.hibernate.ddl-auto=none
+```
+
+As credenciais não devem ser versionadas. Duas formas de evitar isso:
+
+- Usar variáveis de ambiente no arquivo e definir os valores na sua máquina:
+
+  ```properties
+  spring.datasource.username=${DB_USER}
+  spring.datasource.password=${DB_PASSWORD}
+  ```
+
+- Ou criar um `application-local.properties` (já ignorado pelo `.gitignore`) e iniciar com o perfil `local`.
+
+> Confira no seu `application.properties` os nomes exatos das chaves (por exemplo, a do segredo do JWT, se existir) e a porta do servidor. O padrão do Spring Boot é a `8080`.
+
+### 5. Executar a aplicação
+
+```bash
+./mvnw spring-boot:run        # Maven
+# ou
+./gradlew bootRun             # Gradle
+```
+
+Quando aparecer `Started ... in X seconds`, a API está no ar em `http://localhost:8080`.
+
+### 6. Testar rapidamente
+
+1. No Postman, envie `POST http://localhost:8080/auth/login` com e-mail e senha de um usuário da carga.
+2. Copie o token JWT da resposta.
+3. Nas demais requisições, envie o cabeçalho `Authorization: Bearer <token>`.
+
+### 🩺 Problemas comuns
+
+| Sintoma | Causa provável |
+|---|---|
+| `Access denied for user` | Usuário ou senha errados em `application.properties` |
+| `Unknown database 'marketplace_db'` | O `01_ddl.sql` ainda não foi executado |
+| `Communications link failure` | MySQL parado ou porta diferente de 3306 |
+| `Port 8080 already in use` | Defina `server.port=8081` no `application.properties` |
+
+---
+
 ## 📂 Documentação do projeto
 
 Os documentos estão disponíveis diretamente neste repositório.
